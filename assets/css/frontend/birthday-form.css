@@ -1,0 +1,104 @@
+/* birthday-bash/assets/css/frontend/birthday-form.css */
+
+.birthday-bash-gutenberg-block-form {
+  background-color: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.birthday-bash-gutenberg-block-form h3 {
+  text-align: center;
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 25px;
+  font-size: 1.8em;
+}
+
+.birthday-bash-gutenberg-block-form .form-row {
+  margin-bottom: 15px;
+  overflow: hidden; /* Clear floats */
+}
+
+.birthday-bash-gutenberg-block-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #555;
+}
+
+.birthday-bash-gutenberg-block-form input[type="number"],
+.birthday-bash-gutenberg-block-form select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-sizing: border-box;
+  font-size: 1em;
+}
+
+.birthday-bash-gutenberg-block-form .form-row-first {
+  float: left;
+  width: 48%;
+  margin-right: 4%;
+}
+
+.birthday-bash-gutenberg-block-form .form-row-last {
+  float: right;
+  width: 48%;
+}
+
+.birthday-bash-gutenberg-block-form .form-row-wide {
+  clear: both;
+}
+
+.birthday-bash-gutenberg-block-form button.alt {
+  background-color: #007cba;
+  color: #fff;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1.1em;
+  transition: background-color 0.3s ease;
+  width: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.birthday-bash-gutenberg-block-form button.alt:hover {
+  background-color: #005f8f;
+}
+
+.birthday-bash-gutenberg-block-form .required {
+  color: #dc3232;
+  margin-left: 3px;
+}
+
+.birthday-bash-form-info {
+  font-size: 0.9em;
+  color: #777;
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.birthday-bash-block-message {
+  text-align: center;
+  padding: 10px;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+.birthday-bash-block-message.success {
+  background-color: #dff0d8;
+  color: #3c763d;
+  border: 1px solid #d6e9c6;
+}
+
+.birthday-bash-block-message.error {
+  background-color: #f2dede;
+  color: #a94442;
+  border: 1px solid #ebccd1;
+}

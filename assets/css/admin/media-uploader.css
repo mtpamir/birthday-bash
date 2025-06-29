@@ -1,0 +1,21 @@
+/* birthday-bash/assets/css/admin/media-uploader.css */
+
+.birthday-bash-image-upload-wrap {
+    margin-top: 10px;
+    border: 1px solid #ccc;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 5px;
+}
+
+.birthday-bash-image-upload-wrap img#birthday_bash_email_logo_preview {
+    border: 1px solid #ddd;
+    padding: 3px;
+    background: #fff;
+    vertical-align: top;
+}
+
+.birthday-bash-image-upload-wrap .button {
+    margin-right: 8px; /* Spacing between buttons */
+    margin-top: 5px; /* Spacing below image */
+}

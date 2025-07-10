@@ -87,19 +87,33 @@ class BirthdayBash_Helper {
      * @param int $selected_month Optional, the month to be selected.
      * @return string HTML options for the select field.
      */
-    public static function get_months_for_select( $placeholder = '', $selected_month = '' ) {
-        $output = '';
-        if ( ! empty( $placeholder ) ) {
-            $output .= '<option value="">' . esc_html( $placeholder ) . '</option>';
+    // public static function get_months_for_select( $placeholder = '', $selected_month = '' ) {
+    //     $output = '';
+    //     if ( ! empty( $placeholder ) ) {
+    //         $output .= '<option value="">' . esc_html( $placeholder ) . '</option>';
+    //     }
+    //     for ( $m = 1; $m <= 12; $m++ ) {
+    //         $output .= sprintf(
+    //             '<option value="%1$s" %2$s>%3$s</option>',
+    //             esc_attr( $m ),
+    //             selected( $selected_month, $m, false ),
+    //             esc_html( date_i18n( 'F', mktime( 0, 0, 0, $m, 10 ) ) )
+    //         );
+    //     }
+    //     return $output;
+    // }
+
+    public static function get_months_for_select( $default_option_text = '' ) {
+        $months = array();
+
+        if ( ! empty( $default_option_text ) ) {
+            $months[''] = $default_option_text; // Add the default option
         }
+
         for ( $m = 1; $m <= 12; $m++ ) {
-            $output .= sprintf(
-                '<option value="%1$s" %2$s>%3$s</option>',
-                esc_attr( $m ),
-                selected( $selected_month, $m, false ),
-                esc_html( date_i18n( 'F', mktime( 0, 0, 0, $m, 10 ) ) )
-            );
+            $months[ $m ] = date_i18n( 'F', mktime( 0, 0, 0, $m, 10 ) );
         }
-        return $output;
+
+        return $months; // RETURNS AN ASSOCIATIVE ARRAY!
     }
 }

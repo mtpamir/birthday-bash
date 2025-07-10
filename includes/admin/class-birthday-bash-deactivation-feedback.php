@@ -125,8 +125,8 @@ class BirthdayBash_Deactivation_Feedback {
                         <label>
                             <input type="checkbox" name="consent_data_collection" value="1" id="consent_data_collection" required>
                             <?php
-                            /* translators: %s privacy policy link */
                             printf(
+                                /* translators: %s privacy policy link */
                                 esc_html__( 'I consent to sharing this feedback to help improve the plugin. Anonymous technical data (like WordPress version, theme, and plugin list) is collected. No personal data is stored unless you provide it in an email field. Read our %s.', 'birthday-bash' ),
                                 '<a href="' . esc_url( get_privacy_policy_url() ? get_privacy_policy_url() : '#' ) . '" target="_blank">' . esc_html__( 'Privacy Policy', 'birthday-bash' ) . '</a>'
                             );
@@ -243,7 +243,7 @@ class BirthdayBash_Deactivation_Feedback {
         $response = wp_remote_post( $remote_url, array(
             'method'      => 'POST',
             'timeout'     => 15,
-            'redirection' => 26,
+            'redirection' => 5,
             'httpversion' => '1.0',
             'blocking'    => true,
             'headers'     => array( 'Content-Type' => 'application/json; charset=' . get_option( 'blog_charset' ) ),

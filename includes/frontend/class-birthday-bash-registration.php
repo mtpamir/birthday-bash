@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class BirthdayBash_Registration
  *
- * Handles adding and saving birthday fields on the WooCommerce and default WordPress registration forms.
+ * Handles registration page integration for the free plugin.
  */
 class BirthdayBash_Registration {
 
@@ -20,140 +20,143 @@ class BirthdayBash_Registration {
     }
 
     protected function __construct() {
-        // Hooks for WooCommerce registration form
-        add_action( 'woocommerce_register_form', array( $this, 'add_birthday_fields_to_registration_form' ) );
-        add_filter( 'woocommerce_register_post', array( $this, 'validate_registration_birthday_fields_wc' ), 10, 3 );
-        add_action( 'woocommerce_created_customer', array( $this, 'save_registration_birthday_fields' ), 10, 1 );
-
-        // Hooks for default WordPress registration form (e.g., wp-login.php?action=register)
+        // Hook for adding fields to the default WordPress registration form
         add_action( 'register_form', array( $this, 'add_birthday_fields_to_registration_form' ) );
-        add_filter( 'registration_errors', array( $this, 'validate_registration_birthday_fields_wp' ), 10, 3 );
-        add_action( 'user_register', array( $this, 'save_registration_birthday_fields' ), 10, 1 );
+        // Hook for validating fields on registration
+        add_filter( 'registration_errors', array( $this, 'validate_birthday_fields_registration' ), 10, 3 );
+        // Hook for saving fields on user registration
+        add_action( 'user_register', array( $this, 'save_birthday_fields_registration' ), 10, 1 );
     }
 
     /**
-     * Add birthday fields to the registration form (both WooCommerce and default WP).
+     * Add birthday fields to the WordPress registration form.
      */
     public function add_birthday_fields_to_registration_form() {
-        $is_mandatory = get_option( 'birthday_bash_birthday_field_mandatory', 0 );
+        // In a registration form, there's no pre-existing user data to load initially.
+        // $birthday_day   = isset( $_POST['birthday_bash_registration_day'] ) ? absint( $_POST['birthday_bash_registration_day'] ) : '';
+        // $birthday_month = isset( $_POST['birthday_bash_registration_month'] ) ? absint( $_POST['birthday_bash_registration_month'] ) : '';
+
+        $birthday_day = '';
+        $birthday_month = '';
+        $nonce = isset($_POST['birthday_bash_registration_nonce']) ? sanitize_text_field(wp_unslash($_POST['birthday_bash_registration_nonce'])) : '';
+        
+        if ( $nonce && wp_verify_nonce( $nonce, 'birthday_bash_registration_action' ) ) {
+            $birthday_day   = isset( $_POST['birthday_bash_registration_day'] ) ? absint( wp_unslash( $_POST['birthday_bash_registration_day'] ) ) : '';
+            $birthday_month = isset( $_POST['birthday_bash_registration_month'] ) ? absint( wp_unslash( $_POST['birthday_bash_registration_month'] ) ) : '';
+        }
+        
+
+
+        $is_mandatory = (bool) get_option( 'birthday_bash_birthday_field_mandatory', 0 );
         $required_attr = $is_mandatory ? 'required' : '';
 
-        // Check if we are on the default WordPress registration page
-        $is_wp_register_page = ( isset( $GLOBALS['pagenow'] ) && 'wp-login.php' === $GLOBALS['pagenow'] && isset( $_GET['action'] ) && 'register' === $_GET['action'] );
-
-        // WooCommerce registration form uses its own styling classes.
-        // Default WP registration form is simpler.
-        $wrapper_class_day = $is_wp_register_page ? 'form-row' : 'form-row form-row-first';
-        $wrapper_class_month = $is_wp_register_page ? 'form-row' : 'form-row form-row-last';
-        $input_class = $is_wp_register_page ? '' : 'input-text'; // WP uses regular input, WC uses input-text
+        // Get month options as an array from the helper
+        $month_options = BirthdayBash_Helper::get_months_for_select( esc_html__( 'Select Month', 'birthday-bash' ) );
 
         ?>
-        <p class="<?php echo esc_attr( $wrapper_class_day ); ?>">
-            <label for="reg_birthday_bash_birthday_day"><?php esc_html_e( 'Birthday Day', 'birthday-bash' ); ?> <?php echo $is_mandatory ? '<span class="required">*</span>' : ''; ?></label>
-            <?php
-            // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Displaying pre-filled value from $_POST, not processing. Value is escaped.
-            ?>
-            <input type="number" class="<?php echo esc_attr( $input_class ); ?>" name="birthday_bash_birthday_day" id="reg_birthday_bash_birthday_day" value="<?php echo ( ! empty( $_POST['birthday_bash_birthday_day'] ) ) ? esc_attr( wp_unslash( $_POST['birthday_bash_birthday_day'] ) ) : ''; ?>" min="1" max="31" <?php echo esc_attr( $required_attr ); ?> />
+        <p>
+            <label for="birthday_bash_registration_day"><?php esc_html_e( 'Birthday Day', 'birthday-bash' ); ?> <?php echo $is_mandatory ? '<span class="required">*</span>' : ''; ?></label>
+            <input type="number"
+                   name="birthday_bash_registration_day"
+                   id="birthday_bash_registration_day"
+                   class="input"
+                   value="<?php echo esc_attr( $birthday_day ); ?>"
+                   min="1"
+                   max="31"
+                   <?php echo esc_attr( $required_attr ); ?> />
         </p>
-        <p class="<?php echo esc_attr( $wrapper_class_month ); ?>">
-            <label for="reg_birthday_bash_birthday_month"><?php esc_html_e( 'Birthday Month', 'birthday-bash' ); ?> <?php echo $is_mandatory ? '<span class="required">*</span>' : ''; ?></label>
-            <?php
-            // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Displaying pre-filled value from $_POST, not processing. Value is escaped.
-            ?>
-            <select name="birthday_bash_birthday_month" id="reg_birthday_bash_birthday_month" class="<?php echo esc_attr( $input_class ); ?>" <?php echo esc_attr( $required_attr ); ?>>
+
+        <p>
+            <label for="birthday_bash_registration_month"><?php esc_html_e( 'Birthday Month', 'birthday-bash' ); ?> <?php echo $is_mandatory ? '<span class="required">*</span>' : ''; ?></label>
+            <select name="birthday_bash_registration_month"
+                    id="birthday_bash_registration_month"
+                    class="input"
+                    <?php echo esc_attr( $required_attr ); ?>>
                 <?php
-                $selected_month = ( ! empty( $_POST['birthday_bash_birthday_month'] ) ) ? absint( wp_unslash( $_POST['birthday_bash_birthday_month'] ) ) : '';
-                echo wp_kses_post( BirthdayBash_Helper::get_months_for_select( esc_html__( 'Select Month', 'birthday-bash' ), $selected_month ) );
+                foreach ( $month_options as $value => $label ) {
+                    printf(
+                        '<option value="%1$s" %2$s>%3$s</option>',
+                        esc_attr( $value ),
+                        selected( $birthday_month, $value, false ),
+                        esc_html( $label )
+                    );
+                }
                 ?>
             </select>
         </p>
-        <?php if ( ! $is_wp_register_page ) : // Add clear div only for WC form for better layout ?>
-        <div class="clear"></div>
-        <?php endif;
+
+        <?php
+        // Add nonce field for security
+        wp_nonce_field( 'birthday_bash_registration_action', 'birthday_bash_registration_nonce' );
     }
 
     /**
-     * Validate birthday fields on WooCommerce registration.
+     * Validate birthday fields on registration.
      *
-     * @param string $username User's chosen username.
-     * @param string $email User's chosen email.
-     * @param WP_Error $errors WP_Error object.
+     * @param WP_Error $errors              A WP_Error object.
+     * @param string   $sanitized_user_login The user's username.
+     * @param string   $user_email          The user's email address.
      * @return WP_Error
      */
-    public function validate_registration_birthday_fields_wc( $username, $email, $errors ) {
-        // Verify WooCommerce registration nonce
-        if ( ! isset( $_POST['woocommerce-register-nonce'] ) || ! wp_verify_nonce( sanitize_key( $_POST['woocommerce-register-nonce'] ), 'woocommerce-register-nonce' ) ) {
-            $errors->add( 'nonce_error', esc_html__( 'Security check failed during registration. Please try again.', 'birthday-bash' ) );
+    public function validate_birthday_fields_registration( $errors, $sanitized_user_login, $user_email ) {
+        // Verify nonce first - sanitize and unslash nonce from $_POST
+        $nonce = isset( $_POST['birthday_bash_registration_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['birthday_bash_registration_nonce'] ) ) : '';
+
+        if ( ! wp_verify_nonce( $nonce, 'birthday_bash_registration_action' ) ) {
+            $errors->add( 'birthday_nonce_error', esc_html__( 'Security check failed. Please try again.', 'birthday-bash' ) );
             return $errors;
         }
 
-        $is_mandatory = get_option( 'birthday_bash_birthday_field_mandatory', 0 );
-        $raw_day      = isset( $_POST['birthday_bash_birthday_day'] ) ? wp_unslash( $_POST['birthday_bash_birthday_day'] ) : ''; // Retrieve raw input
-        $day          = absint( $raw_day ); // Sanitize
-        $raw_month    = isset( $_POST['birthday_bash_birthday_month'] ) ? wp_unslash( $_POST['birthday_bash_birthday_month'] ) : ''; // Retrieve raw input
-        $month        = absint( $raw_month ); // Sanitize
+        // Now safe to access and sanitize the other $_POST fields
+        $is_mandatory = (bool) get_option( 'birthday_bash_birthday_field_mandatory', 0 );
+        $day          = isset( $_POST['birthday_bash_registration_day'] ) ? absint( wp_unslash( $_POST['birthday_bash_registration_day'] ) ) : 0;
+        $month        = isset( $_POST['birthday_bash_registration_month'] ) ? absint( wp_unslash( $_POST['birthday_bash_registration_month'] ) ) : 0;
         $fake_year    = 2024; // A leap year for checkdate validation
 
-        if ( $is_mandatory && ( $day < 1 || $day > 31 || $month < 1 || $month > 12 || ! checkdate( $month, $day, $fake_year ) ) ) {
-            $errors->add( 'birthday_bash_date_error', esc_html__( 'Please enter a valid birthday (day and month).', 'birthday-bash' ) );
-        }
-        return $errors;
-    }
+        $day_has_value   = ( $day > 0 );
+        $month_has_value = ( $month > 0 );
 
-    /**
-     * Validate birthday fields on default WordPress registration.
-     *
-     * @param WP_Error $errors WP_Error object.
-     * @param string $sanitized_user_login User's chosen username.
-     * @param string $user_email User's chosen email.
-     * @return WP_Error
-     */
-    public function validate_registration_birthday_fields_wp( $errors, $sanitized_user_login, $user_email ) {
-        // Verify default WordPress registration nonce
-        if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_key( $_POST['_wpnonce'] ), 'register' ) ) {
-            $errors->add( 'nonce_error', esc_html__( 'Security check failed during registration. Please try again.', 'birthday-bash' ) );
-            return $errors;
-        }
-
-        $is_mandatory = get_option( 'birthday_bash_birthday_field_mandatory', 0 );
-        $raw_day      = isset( $_POST['birthday_bash_birthday_day'] ) ? wp_unslash( $_POST['birthday_bash_birthday_day'] ) : ''; // Retrieve raw input
-        $day          = absint( $raw_day ); // Sanitize
-        $raw_month    = isset( $_POST['birthday_bash_birthday_month'] ) ? wp_unslash( $_POST['birthday_bash_birthday_month'] ) : ''; // Retrieve raw input
-        $month        = absint( $raw_month ); // Sanitize
-        $fake_year    = 2024; // A leap year for checkdate validation
-
-        if ( $is_mandatory && ( $day < 1 || $day > 31 || $month < 1 || $month > 12 || ! checkdate( $month, $day, $fake_year ) ) ) {
-            $errors->add( 'birthday_bash_date_error', esc_html__( 'Please enter a valid birthday (day and month).', 'birthday-bash' ) );
-        }
-        return $errors;
-    }
-
-    /**
-     * Save birthday fields after customer creation (both WooCommerce and default WP).
-     *
-     * @param int $customer_id The ID of the newly created customer.
-     */
-    public function save_registration_birthday_fields( $customer_id ) {
-        // Nonce check is performed in validation methods which run before save.
-        // Data is assumed to be validated and sanitized by this point,
-        // but we still sanitize here for robustness as $_POST is global.
-
-        $raw_day   = isset( $_POST['birthday_bash_birthday_day'] ) ? wp_unslash( $_POST['birthday_bash_birthday_day'] ) : '';
-        $day       = absint( $raw_day );
-        $raw_month = isset( $_POST['birthday_bash_birthday_month'] ) ? wp_unslash( $_POST['birthday_bash_birthday_month'] ) : '';
-        $month     = absint( $raw_month );
-        $fake_year = 2024; // For consistency in validation logic.
-
-        // Only save if valid date is provided.
-        $should_save = ( $day >= 1 && $day <= 31 && $month >= 1 && $month <= 12 && checkdate( $month, $day, $fake_year ) );
-
-        if ( $should_save ) {
-            update_user_meta( $customer_id, 'birthday_bash_birthday_day', $day );
-            update_user_meta( $customer_id, 'birthday_bash_birthday_month', $month );
+        if ( $is_mandatory ) {
+            if ( ! $day_has_value || ! $month_has_value || ! checkdate( $month, $day, $fake_year ) ) {
+                $errors->add( 'birthday_error', esc_html__( 'Please enter a valid birthday. Both day and month are required and must form a correct date.', 'birthday-bash' ) );
+            }
         } else {
-            // If not valid, ensure metas are removed/not set.
-            delete_user_meta( $customer_id, 'birthday_bash_birthday_day' );
-            delete_user_meta( $customer_id, 'birthday_bash_birthday_month' );
+            if ( ( $day_has_value || $month_has_value ) && ! checkdate( $month, $day, $fake_year ) ) {
+                $errors->add( 'birthday_error', esc_html__( 'The birthday date you provided is invalid. Please correct it or leave both fields empty.', 'birthday-bash' ) );
+            }
         }
+
+        return $errors;
+    }
+
+    /**
+     * Save birthday fields on user registration.
+     *
+     * @param int $user_id The new user's ID.
+     */
+    public function save_birthday_fields_registration( $user_id ) {
+        // Check nonce first
+        $nonce = isset( $_POST['birthday_bash_registration_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['birthday_bash_registration_nonce'] ) ) : '';
+        if ( ! wp_verify_nonce( $nonce, 'birthday_bash_registration_action' ) ) {
+            // Do not save if nonce invalid
+            return;
+        }
+
+        $is_mandatory = (bool) get_option( 'birthday_bash_birthday_field_mandatory', 0 );
+        $day          = isset( $_POST['birthday_bash_registration_day'] ) ? absint( wp_unslash( $_POST['birthday_bash_registration_day'] ) ) : 0;
+        $month        = isset( $_POST['birthday_bash_registration_month'] ) ? absint( wp_unslash( $_POST['birthday_bash_registration_month'] ) ) : 0;
+        $fake_year    = 2024;
+
+        $is_valid_date = checkdate( $month, $day, $fake_year );
+
+        if ( $is_valid_date ) {
+            update_user_meta( $user_id, 'birthday_bash_birthday_day', $day );
+            update_user_meta( $user_id, 'birthday_bash_birthday_month', $month );
+        } elseif ( ! $is_mandatory && ( $day === 0 && $month === 0 ) ) {
+            // If not mandatory AND both fields are empty, ensure no meta is saved.
+            delete_user_meta( $user_id, 'birthday_bash_birthday_day' );
+            delete_user_meta( $user_id, 'birthday_bash_birthday_month' );
+        }
+        // If mandatory and invalid, validation (registration_errors) should have caught it.
     }
 }

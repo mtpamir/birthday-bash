@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * @hooked WC_Emails::email_header() Output the email header
  */
-do_action( 'woocommerce_email_header', $email_heading, $email );
+// do_action( 'woocommerce_email_header', $email_heading, $email );
 
 if ( ! empty( $logo_url ) ) {
     // phpcs:ignore PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage -- Image is for an email template, direct URL is necessary.

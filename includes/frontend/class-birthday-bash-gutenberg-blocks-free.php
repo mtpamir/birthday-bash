@@ -74,7 +74,8 @@ class BirthdayBash_Gutenberg_Blocks_Free {
                 'is_mandatory' => (bool) get_option( 'birthday_bash_birthday_field_mandatory', 0 ),
                 'messages' => array(
                     'success' => esc_html__( 'Your birthday has been saved successfully!', 'birthday-bash' ),
-                    'error'   => esc_html__( 'Please enter a valid birthday (day and month).', 'birthday-bash' ),
+                    // Updated message for invalid date
+                    'error'   => esc_html__( 'Please enter a valid birthday. The date (day and month) you provided is incorrect.', 'birthday-bash' ),
                     'not_logged_in' => esc_html__( 'You must be logged in to save your birthday.', 'birthday-bash' ),
                     'birthday_cleared' => esc_html__( 'Birthday information cleared.', 'birthday-bash' ), // Message for clearing
                 ),
@@ -168,14 +169,16 @@ class BirthdayBash_Gutenberg_Blocks_Free {
 
         $is_mandatory = (bool) get_option( 'birthday_bash_birthday_field_mandatory', 0 );
 
+        // Validation for mandatory fields, or any invalid date input
         if ( $is_mandatory && ( $day < 1 || $day > 31 || $month < 1 || $month > 12 || ! checkdate( $month, $day, $fake_year ) ) ) {
             wp_send_json_error( array( 'message' => birthday_bash_free_block_vars['messages']['error'] ) );
         } elseif ( $day >= 1 && $day <= 31 && $month >= 1 && $month <= 12 && checkdate( $month, $day, $fake_year ) ) {
+            // If date is valid, update meta
             update_user_meta( $user_id, 'birthday_bash_birthday_day', $day );
             update_user_meta( $user_id, 'birthday_bash_birthday_month', $month );
             wp_send_json_success( array( 'message' => birthday_bash_free_block_vars['messages']['success'] ) );
         } else {
-            // If not mandatory and values are invalid, ensure metas are removed.
+            // If not mandatory and values are invalid or cleared, ensure metas are removed.
             delete_user_meta( $user_id, 'birthday_bash_birthday_day' );
             delete_user_meta( $user_id, 'birthday_bash_birthday_month' );
             // Use a specific message for clearing, as it's not an "error" but an action.

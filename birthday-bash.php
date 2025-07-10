@@ -1,7 +1,6 @@
 <?php
 /**
  * Plugin Name: Birthday Bash
- * Plugin URI:  https://masharultasbeeh.com/plugins/birthday-bash
  * Description: Make your WooCommerce customers happy by automatically sending them personalized birthday coupons. It’s a simple way to build loyalty and encourage them to shop with you again.
  * Version:     1.0.0
  * Author:      MT Pamir

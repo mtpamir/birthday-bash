@@ -37,24 +37,24 @@ class BirthdayBash_Settings {
         }
 
         // Enqueue WordPress media scripts (this loads wp-media-models and others)
-        wp_enqueue_media(); // Keep this, as it prepares the media frame components.
+        wp_enqueue_media(); // Prepares the media frame components.
 
-        // Register custom media uploader script first for robustness
+        // Register and enqueue custom media uploader script
         wp_register_script(
-            'birthday-bash-media-script', // Fixed script handle
+            'birthday-bash-media-script',
             BIRTHDAY_BASH_PLUGIN_URL . 'assets/js/admin/media-uploader.js',
-            array( 'jquery', 'media-upload', 'thickbox' ), // Fixed dependencies to ensure modal loads
+            array( 'jquery', 'media-upload', 'thickbox' ),
             BIRTHDAY_BASH_VERSION,
             true
         );
-        wp_enqueue_script( 'birthday-bash-media-script' ); // Enqueue the registered script
+        wp_enqueue_script( 'birthday-bash-media-script' );
 
-        // Explicitly enqueueing these older media dependencies that might be needed for the modal to pop up.
+        // Enqueue legacy media dependencies and styles
         wp_enqueue_script( 'media-upload' );
         wp_enqueue_script( 'thickbox' );
         wp_enqueue_style( 'thickbox' );
 
-        // Enqueue custom media uploader styles
+        // Enqueue custom styles for the media uploader
         wp_enqueue_style(
             'birthday-bash-media-uploader-style',
             BIRTHDAY_BASH_PLUGIN_URL . 'assets/css/admin/media-uploader.css',
@@ -123,7 +123,6 @@ class BirthdayBash_Settings {
             'birthday_bash_general_settings_section'
         );
 
-
         // Email Settings Section
         add_settings_section(
             'birthday_bash_email_settings_section',
@@ -156,10 +155,8 @@ class BirthdayBash_Settings {
             'birthday_bash_email_settings_section'
         );
 
-
-        // Register Settings Fields
+        // Register Settings Fields with sanitization callbacks
         register_setting( 'birthday-bash-settings-group', 'birthday_bash_coupon_type', array( 'sanitize_callback' => array( $this, 'sanitize_coupon_type' ) ) );
-        // Fixed: Custom sanitize callback for coupon amount validation
         register_setting( 'birthday-bash-settings-group', 'birthday_bash_coupon_amount', array( 'sanitize_callback' => array( $this, 'sanitize_coupon_amount' ) ) );
         register_setting( 'birthday-bash-settings-group', 'birthday_bash_coupon_prefix', array( 'sanitize_callback' => 'sanitize_text_field' ) );
         register_setting( 'birthday-bash-settings-group', 'birthday_bash_birthday_field_mandatory', array( 'sanitize_callback' => 'absint' ) );
@@ -197,7 +194,7 @@ class BirthdayBash_Settings {
      * @return string
      */
     public function sanitize_coupon_type( $input ) {
-        return in_array( $input, array( 'fixed_cart', 'percent' ) ) ? $input : 'fixed_cart';
+        return in_array( $input, array( 'fixed_cart', 'percent' ), true ) ? $input : 'fixed_cart';
     }
 
     /**
@@ -216,15 +213,14 @@ class BirthdayBash_Settings {
 
         // If validation fails, set a settings error and return the previous valid option
         add_settings_error(
-            'birthday_bash_coupon_amount', // Field ID
-            'invalid_amount', // Error code
+            'birthday_bash_coupon_amount',
+            'invalid_amount',
             esc_html__( 'Coupon Amount must be a number greater than 0.', 'birthday-bash' ),
-            'error' // Type of message (e.g., 'error', 'warning', 'success', 'info')
+            'error'
         );
 
-        return floatval( get_option( 'birthday_bash_coupon_amount', 10 ) ); // Return old value
+        return floatval( get_option( 'birthday_bash_coupon_amount', 10 ) );
     }
-
 
     /**
      * Coupon Amount field callback.
@@ -232,7 +228,8 @@ class BirthdayBash_Settings {
     public function coupon_amount_callback() {
         $option = get_option( 'birthday_bash_coupon_amount', 10 );
         ?>
-        <input type="number" name="birthday_bash_coupon_amount" id="birthday_bash_coupon_amount" value="<?php echo esc_attr( $option ); ?>" min="0.01" step="0.01" /> <?php
+        <input type="number" name="birthday_bash_coupon_amount" id="birthday_bash_coupon_amount" value="<?php echo esc_attr( $option ); ?>" min="0.01" step="0.01" />
+        <?php
     }
 
     /**
@@ -288,18 +285,28 @@ class BirthdayBash_Settings {
 
     /**
      * Email Logo URL field callback.
-     * MODIFIED: To use media library selector
+     * Uses media library selector and outputs image with wp_get_attachment_image()
      */
     public function email_logo_callback() {
-        $option = get_option( 'birthday_bash_email_logo', '' ); // This will store the URL
+        $image_url = get_option( 'birthday_bash_email_logo', '' );
+        $attachment_id = $this->get_attachment_id_by_url( $image_url );
         ?>
         <div class="birthday-bash-image-upload-wrap">
-            <input type="hidden" name="birthday_bash_email_logo" id="birthday_bash_email_logo" value="<?php echo esc_url( $option ); ?>" class="regular-text" />
-            <img id="birthday_bash_email_logo_preview" src="<?php echo esc_url( $option ); ?>" style="max-width:200px; height:auto; margin-bottom:10px; display:<?php echo empty($option) ? 'none' : 'block'; ?>;" />
+            <input type="hidden" name="birthday_bash_email_logo" id="birthday_bash_email_logo" value="<?php echo esc_url( $image_url ); ?>" class="regular-text" />
+            <?php
+            if ( $attachment_id ) {
+                echo wp_get_attachment_image( $attachment_id, 'medium', false, array(
+                    'id'    => 'birthday_bash_email_logo_preview',
+                    'style' => 'max-width:200px; height:auto; margin-bottom:10px; display:block;',
+                ) );
+            } else {
+                echo ''; // No image shown if no valid attachment ID
+            }
+            ?>
             <button type="button" class="button button-secondary birthday-bash-select-image-button">
-                <?php echo empty($option) ? esc_html__( 'Select Image', 'birthday-bash' ) : esc_html__( 'Change Image', 'birthday-bash' ); ?>
+                <?php echo empty( $image_url ) ? esc_html__( 'Select Image', 'birthday-bash' ) : esc_html__( 'Change Image', 'birthday-bash' ); ?>
             </button>
-            <button type="button" class="button button-secondary birthday-bash-remove-image-button" style="display:<?php echo empty($option) ? 'none' : 'inline-block'; ?>;">
+            <button type="button" class="button button-secondary birthday-bash-remove-image-button" style="display:<?php echo empty( $image_url ) ? 'none' : 'inline-block'; ?>;">
                 <?php esc_html_e( 'Remove Image', 'birthday-bash' ); ?>
             </button>
             <p class="description"><?php esc_html_e( 'Select an image from the media library to use as your email logo.', 'birthday-bash' ); ?></p>
@@ -322,7 +329,7 @@ class BirthdayBash_Settings {
      * Email Message field callback.
      */
     public function email_message_callback() {
-        $option = get_option( 'birthday_bash_email_message', esc_html__( 'As a special birthday treat, please enjoy this {coupon_amount} {coupon_type_text} off your next purchase. Use coupon code: {coupon_code}', 'birthday-bash' ) );
+        $option = get_option( 'birthday_bash_email_message', esc_html__( 'As a special birthday treat, please enjoy this {coupon_type_text} off your next purchase. Use coupon code: ', 'birthday-bash' ) );
         wp_editor(
             $option,
             'birthday_bash_email_message',
@@ -340,6 +347,44 @@ class BirthdayBash_Settings {
             <code>{customer_name}</code>, <code>{coupon_code}</code>, <code>{coupon_amount}</code>, <code>{coupon_type_text}</code>, <code>{coupon_expiry_date}</code>
         </p>
         <?php
+    }
+
+    /**
+     * Get attachment ID by URL.
+     *
+     * Uses caching to reduce database calls.
+     *
+     * @param string $attachment_url URL of the attachment.
+     * @return int|false Attachment ID or false if not found.
+     */
+    private function get_attachment_id_by_url( $attachment_url ) {
+        global $wpdb;
+
+        if ( empty( $attachment_url ) ) {
+            return false;
+        }
+
+        // Try to get from cache
+        $cache_key = 'birthday_bash_attachment_id_' . md5( $attachment_url );
+        $cached = wp_cache_get( $cache_key );
+
+        if ( false !== $cached ) {
+            return $cached;
+        }
+
+        $upload_dir_paths = wp_upload_dir();
+
+        // Remove upload base url from the attachment url to get relative path
+        if ( false !== strpos( $attachment_url, $upload_dir_paths['baseurl'] ) ) {
+            $attachment_url = str_replace( $upload_dir_paths['baseurl'] . '/', '', $attachment_url );
+        }
+
+        $attachment_id = attachment_url_to_postid( $attachment_url );
+
+        // Cache the result
+        wp_cache_set( $cache_key, $attachment_id );
+
+        return $attachment_id;
     }
 
     /**

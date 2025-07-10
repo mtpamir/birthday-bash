@@ -45,6 +45,7 @@ class BirthdayBash {
     private function define_constants() {
         define( 'BIRTHDAY_BASH_VERSION', '1.0.0' );
         define( 'BIRTHDAY_BASH_PLUGIN_DIR', plugin_dir_path( dirname( __FILE__ ) ) );
+        // FIX: Ensure this line has the correct closing parenthesis
         define( 'BIRTHDAY_BASH_PLUGIN_URL', plugin_dir_url( dirname( __FILE__ ) ) );
         define( 'BIRTHDAY_BASH_BASENAME', plugin_basename( dirname( dirname( __FILE__ ) ) . '/birthday-bash.php' ) );
     }
@@ -60,18 +61,24 @@ class BirthdayBash {
         require_once BIRTHDAY_BASH_PLUGIN_DIR . 'includes/frontend/class-birthday-bash-frontend.php';
         require_once BIRTHDAY_BASH_PLUGIN_DIR . 'includes/frontend/class-birthday-bash-my-account.php';
         require_once BIRTHDAY_BASH_PLUGIN_DIR . 'includes/frontend/class-birthday-bash-checkout.php';
-        require_once BIRTHDAY_BASH_PLUGIN_DIR . 'includes/frontend/class-birthday-bash-gutenberg-blocks-free.php'; // NEW: Include free Gutenberg block class
-        require_once BIRTHDAY_BASH_PLUGIN_DIR . 'includes/frontend/class-birthday-bash-registration.php'; // NEW: Include registration class
+        require_once BIRTHDAY_BASH_PLUGIN_DIR . 'includes/frontend/class-birthday-bash-gutenberg-blocks-free.php';
+        require_once BIRTHDAY_BASH_PLUGIN_DIR . 'includes/frontend/class-birthday-bash-registration.php';
         require_once BIRTHDAY_BASH_PLUGIN_DIR . 'includes/common/class-birthday-bash-cron.php';
         require_once BIRTHDAY_BASH_PLUGIN_DIR . 'includes/common/class-birthday-bash-db.php';
         require_once BIRTHDAY_BASH_PLUGIN_DIR . 'includes/class-birthday-bash-helper.php';
+        // DO NOT include class-birthday-bash-email.php here.
+        // It must be loaded when WC_Email is guaranteed to be available (via woocommerce_email_classes hook),
+        // or explicitly within the method of BirthdayBash_Cron that uses it.
     }
 
     /**
      * Initialize hooks.
      */
     private function init_hooks() {
+        // Re-add this hook. It's safe now because BirthdayBash is initialized via 'woocommerce_loaded'
+        // which means 'plugins_loaded' has already fired and the class is definitely available.
         add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded' ), 10 );
+
         add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
         add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_scripts' ) );
@@ -94,6 +101,7 @@ class BirthdayBash {
 
     /**
      * Runs once all plugins are loaded.
+     * This is where text domain loading traditionally happens.
      */
     public function on_plugins_loaded() {
         load_plugin_textdomain( 'birthday-bash', false, dirname( BIRTHDAY_BASH_BASENAME ) . '/languages' );
@@ -109,8 +117,8 @@ class BirthdayBash {
             'manage_options',
             'birthday-bash',
             array( BirthdayBash_Settings::get_instance(), 'render_settings_page' ),
-            'dashicons-buddicons-community', // Birthday cake icon
-            '55.6' // Position after WooCommerce
+            'dashicons-buddicons-community',
+            '55.6'
         );
 
         add_submenu_page(
@@ -136,7 +144,6 @@ class BirthdayBash {
      */
     public function enqueue_frontend_scripts() {
         wp_enqueue_style( 'birthday-bash-frontend', BIRTHDAY_BASH_PLUGIN_URL . 'assets/css/birthday-bash.css', array(), BIRTHDAY_BASH_VERSION );
-        // Add any necessary frontend scripts here (e.g., for shortcodes/widgets, if any in free)
     }
 
     /**
@@ -146,7 +153,8 @@ class BirthdayBash {
      * @return array Modified array of WooCommerce email classes.
      */
     public function add_email_class_to_woocommerce( $emails ) {
-        // Only require the email class when WooCommerce is actually requesting it
+        // This is the correct place to require it for WooCommerce's email system
+        // because WC_Email (parent) is guaranteed to be available by this point.
         require_once BIRTHDAY_BASH_PLUGIN_DIR . 'includes/common/class-birthday-bash-email.php';
         $emails['BirthdayBash_Birthday_Coupon'] = BirthdayBash_Email::get_instance();
         return $emails;

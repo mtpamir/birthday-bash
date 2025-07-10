@@ -88,22 +88,24 @@ class BirthdayBash_Admin {
             return;
         }
 
-        if ( isset( $_POST['birthday_bash_birthday_day'] ) ) {
-            $day = absint( $_POST['birthday_bash_birthday_day'] );
-            if ( $day >= 1 && $day <= 31 ) {
-                update_user_meta( $user_id, 'birthday_bash_birthday_day', $day );
-            } else {
-                delete_user_meta( $user_id, 'birthday_bash_birthday_day' );
-            }
-        }
+        $day       = isset( $_POST['birthday_bash_birthday_day'] ) ? absint( $_POST['birthday_bash_birthday_day'] ) : 0;
+        $month     = isset( $_POST['birthday_bash_birthday_month'] ) ? absint( $_POST['birthday_bash_birthday_month'] ) : 0;
+        $fake_year = 2024; // Use a generic leap year for checkdate validation.
 
-        if ( isset( $_POST['birthday_bash_birthday_month'] ) ) {
-            $month = absint( $_POST['birthday_bash_birthday_month'] );
-            if ( $month >= 1 && $month <= 12 ) {
-                update_user_meta( $user_id, 'birthday_bash_birthday_month', $month );
-            } else {
-                delete_user_meta( $user_id, 'birthday_bash_birthday_month' );
-            }
+        // Determine if the provided date input is valid (day/month in range AND valid date)
+        $is_valid_date_provided = ( $day >= 1 && $day <= 31 && $month >= 1 && $month <= 12 && checkdate( $month, $day, $fake_year ) );
+
+        // If a valid date is provided, update user meta
+        if ( $is_valid_date_provided ) {
+            update_user_meta( $user_id, 'birthday_bash_birthday_day', $day );
+            update_user_meta( $user_id, 'birthday_bash_birthday_month', $month );
+        } else {
+            // If the date is not valid (e.g., April 31st, or fields cleared), delete existing meta.
+            delete_user_meta( $user_id, 'birthday_bash_birthday_day' );
+            delete_user_meta( $user_id, 'birthday_bash_birthday_month' );
+            // Optionally, you could add an admin notice here for invalid input, similar to My Account page.
+            // add_action( 'admin_notices', function() { /* Display error notice */ } );
+            // However, on profile.php, it's often more silent to prevent saving invalid.
         }
     }
 }
